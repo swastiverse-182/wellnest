@@ -1,4 +1,4 @@
-import { CalendarDaysIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { CalendarDaysIcon } from "@heroicons/react/24/outline";
 
 // helper to format yyyy-mm-dd → dd-mm-yyyy
 function formatDate(dateStr) {
@@ -9,38 +9,31 @@ function formatDate(dateStr) {
 
 function CalendarEvent({ event, onDelete }) {
   return (
-    <div className="flex justify-between items-start bg-green-100 border border-green-200 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+    <div className="flex justify-between items-start bg-white border border-green-200 rounded-xl px-4 py-4 shadow-sm hover:shadow-md transition">
       <div>
+        {/* Title */}
         <h3 className="font-semibold text-lg text-green-800">
           {event.title}
         </h3>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-green-700 mt-1">
-          {/* Date */}
-          <div className="flex items-center gap-1">
-            <CalendarDaysIcon className="w-4 h-4" />
-            <span>{formatDate(event.date)}</span>
-          </div>
-
-          {/* Time */}
-          {event.time && (
-            <div className="flex items-center gap-1">
-              <ClockIcon className="w-4 h-4" />
-              <span>{event.time}</span>
-            </div>
-          )}
+        {/* Date */}
+        <div className="flex items-center gap-2 text-sm text-green-700 mt-1">
+          <CalendarDaysIcon className="w-4 h-4" />
+          <span>{formatDate(event.date)}</span>
         </div>
 
-        {event.details && (
-          <p className="mt-2 text-sm text-gray-700">
-            {event.details}
+        {/* Description / Notes */}
+        {event.description && (
+          <p className="mt-2 text-sm text-gray-600">
+            {event.description}
           </p>
         )}
       </div>
 
+      {/* Delete button */}
       <button
-        onClick={() => onDelete(event.id)}
-        className="text-red-500 hover:text-red-700 font-bold text-lg"
+        onClick={() => onDelete(event._id)}
+        className="text-gray-400 hover:text-red-500 transition text-lg"
       >
         ✕
       </button>

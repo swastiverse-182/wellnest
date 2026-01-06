@@ -12,30 +12,32 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError("");
     setLoading(true);
 
-    const data = await loginUser(email, password);
+    try {
+      const data = await loginUser(email, password);
 
-    setLoading(false);
+      // backend error
+      if (data?.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
 
-    //  backend rejected login
-    if (data?.error) {
-      setError(data.error);
-      return;
-    }
-
-    // login ONLY if token exists
-    if (data?.token) {
-      login({
-        token: data.token,
-        user: data.user || { email }, // safe fallback
-      });
-
-      navigate("/", { replace: true }); //  go to HOME
-    } else {
-      setError("Invalid login response");
+      // SUCCESS: backend sends {_id, name, email, token}
+      if (data?.token && data?._id) {
+        login(data); // store in context + localStorage
+        navigate("/", { replace: true });
+      } else {
+        setError("Invalid login response");
+      }
+    } catch (err) {
+      setError("Server error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,28 +49,32 @@ export default function Login() {
         <p className="text-red-600 mb-3 text-sm">{error}</p>
       )}
 
-      <input
-        className="w-full border p-2 mb-3 rounded"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+      <form onSubmit={handleSubmit}>
+        <input
+          className="w-full border p-2 mb-3 rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-      <input
-        type="password"
-        className="w-full border p-2 mb-3 rounded"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <input
+          type="password"
+          className="w-full border p-2 mb-3 rounded"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:opacity-60"
-      >
-        {loading ? "Logging in..." : "Login"}
-      </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:opacity-60"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
 
       <p className="mt-4 text-sm text-center">
         Don’t have an account?{" "}

@@ -5,9 +5,9 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// ==========================
+
 // REGISTER
-// ==========================
+
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -37,9 +37,9 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ==========================
+
 // LOGIN
-// ==========================
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -64,15 +64,14 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // ✅ THIS FIXES FRONTEND LOGIN ISSUE
+    
     res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  token,
+});
+
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     res.status(500).json({ error: "Server error" });

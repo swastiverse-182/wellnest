@@ -8,6 +8,8 @@ import authRoutes from "./routes/auth.js";
 import adminHealthFood from "./routes/adminHealthFood.js";
 import foodAdviceRoutes from "./routes/foodAdvice.js";
 import adminUsers from "./routes/adminUsers.js";
+import userGoalsRouter from "./routes/userGoals.js";
+import calendarRoutes from "./routes/calendar.js";
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/admin/health-foods", adminHealthFood);
 app.use("/api/food-advice", foodAdviceRoutes);
 app.use("/api/admin", adminUsers);
+app.use("/api/goals", userGoalsRouter);
+app.use("/api/calendar", calendarRoutes);
 
 
 /*  FALLBACK  */

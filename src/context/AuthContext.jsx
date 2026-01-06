@@ -4,17 +4,21 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("auth");
     if (stored) {
       setUser(JSON.parse(stored));
     }
-    setLoading(false); // auth check completed
+    setLoading(false);
   }, []);
 
+  // data should include: {_id, name, email, token}
   const login = (data) => {
+    if (!data._id) {
+      console.error(" login data missing _id!", data);
+    }
     setUser(data);
     localStorage.setItem("auth", JSON.stringify(data));
   };

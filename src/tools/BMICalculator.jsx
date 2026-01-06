@@ -22,18 +22,20 @@ function BMICalculator() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-lg rounded-2xl p-8 mt-8">
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
+    <div className="w-full space-y-6">
+      {/* Title */}
+      <h2 className="text-3xl font-bold text-gray-900 text-center">
         BMI Calculator
       </h2>
 
+      {/* Inputs */}
       <div className="space-y-4">
         <input
           type="number"
           placeholder="Height (cm)"
           value={height}
           onChange={(e) => setHeight(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full border border-gray-300 rounded-xl p-4 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
         />
 
         <input
@@ -41,19 +43,20 @@ function BMICalculator() {
           placeholder="Weight (kg)"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full border border-gray-300 rounded-xl p-4 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
         />
 
         <button
           onClick={calculateBMI}
-          className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition"
+          className="w-full bg-green-600 text-white text-base font-semibold py-4 rounded-xl hover:bg-green-700 transition"
         >
           Calculate BMI
         </button>
       </div>
 
+      {/* Result */}
       {bmi && (
-        <div className="mt-6 bg-green-50 p-4 rounded-lg text-center">
+        <div className="text-center space-y-1">
           <p className="text-lg">
             <span className="font-semibold">BMI:</span> {bmi}
           </p>

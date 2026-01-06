@@ -1,113 +1,124 @@
 import { useState, useEffect } from "react";
 import CalendarEvent from "../components/CalendarEvent";
 import calendarBg from "../assets/calendarBg.png";
+import {
+  fetchEvents,
+  createEvent,
+  removeEvent,
+} from "../api/calendar";
 
 function Calendar() {
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem("healthEvents");
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [events, setEvents] = useState([]);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
   const [details, setDetails] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  //  Load events from backend on page load
   useEffect(() => {
-    localStorage.setItem("healthEvents", JSON.stringify(events));
-  }, [events]);
+    const loadEvents = async () => {
+      try {
+        const data = await fetchEvents();
+        setEvents(data);
+      } catch (err) {
+        console.error("Failed to load events", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const addEvent = () => {
-    if (!title || !date) {
-      alert("Title and date are required");
-      return;
-    }
+    loadEvents();
+  }, []);
 
-    setEvents((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
+  //  Add new event
+  const addEvent = async () => {
+    if (!title || !date) return;
+
+    try {
+      const savedEvent = await createEvent({
         title,
         date,
-        time,
-        details,
-      },
-    ]);
+        description: details, // map frontend details → backend description
+      });
 
-    setTitle("");
-    setDate("");
-    setTime("");
-    setDetails("");
+      setEvents((prev) => [...prev, savedEvent]);
+
+      setTitle("");
+      setDate("");
+      setDetails("");
+    } catch (err) {
+      console.error("Failed to save event", err);
+    }
   };
 
-  const deleteEvent = (id) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+  //  Delete event
+  const deleteEvent = async (id) => {
+    try {
+      await removeEvent(id);
+      setEvents((prev) => prev.filter((e) => e._id !== id));
+    } catch (err) {
+      console.error("Failed to delete event", err);
+    }
   };
 
   return (
     <div
-      className="relative min-h-screen bg-cover bg-center py-12 px-4"
+      className="min-h-screen bg-cover bg-center py-10 sm:py-16 px-4"
       style={{ backgroundImage: `url(${calendarBg})` }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-white/30"></div>
-
       {/* Main container */}
-      <div className="relative z-10 max-w-5xl mx-auto bg-green-50/90 backdrop-blur-lg rounded-3xl p-6 md:p-10 shadow-xl border border-green-200">
-        <h1 className="text-3xl font-bold mb-8 text-green-700 text-center">
-          📅 Health Calendar
+      <div className="max-w-6xl mx-auto bg-white/90 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xl">
+        <h1 className="text-2xl sm:text-4xl font-bold text-green-700 mb-8 sm:mb-12 text-center">
+          📅 Wellness Calendar
         </h1>
 
-        {/* Add Event */}
-        <div className="bg-white rounded-2xl p-6 shadow-md mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        {/* Add Event Section */}
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-5 sm:p-8 shadow-md mb-10">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
+            Add Health Event
+          </h2>
+
+          <div className="flex flex-col lg:flex-row gap-3 mb-4">
             <input
-              className="border px-4 py-3 rounded-xl focus:ring-2 focus:ring-green-500"
-              placeholder="Event title"
+              className="flex-1 border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Event title (Yoga, Doctor visit...)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
 
             <input
-              className="border px-4 py-3 rounded-xl focus:ring-2 focus:ring-green-500"
               type="date"
+              className="border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
 
-            <input
-              className="border px-4 py-3 rounded-xl focus:ring-2 focus:ring-green-500"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-
             <button
               onClick={addEvent}
-              className="bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-semibold py-3"
+              className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition w-full lg:w-auto"
             >
               Add
             </button>
           </div>
 
           <textarea
-            className="border px-4 py-3 rounded-xl w-full focus:ring-2 focus:ring-green-500"
+            className="border rounded-xl px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="Details / notes (optional)"
             value={details}
             onChange={(e) => setDetails(e.target.value)}
           />
         </div>
 
-        {/* Events list */}
-        {events.length === 0 ? (
-          <p className="text-gray-500 text-center">
-            No events yet.
-          </p>
+        {/* Events List */}
+        {loading ? (
+          <p className="text-center text-gray-500">Loading events...</p>
+        ) : events.length === 0 ? (
+          <p className="text-gray-500 text-center">No events added yet 🌱</p>
         ) : (
           <div className="space-y-4">
             {events.map((event) => (
               <CalendarEvent
-                key={event.id}
+                key={event._id}
                 event={event}
                 onDelete={deleteEvent}
               />

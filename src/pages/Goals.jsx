@@ -1,33 +1,78 @@
 import { useState, useEffect } from "react";
 import goalsBg from "../assets/goalsBg.png";
+import { useAuth } from "../context/AuthContext";
+import { getUserGoals, addGoal, deleteGoal } from "../api/goals";
 
 function Goals() {
-  const [goals, setGoals] = useState(() => {
-    const saved = localStorage.getItem("wellnest_goals");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user } = useAuth();
 
+  const [goals, setGoals] = useState([]);
   const [healthGoal, setHealthGoal] = useState("");
   const [workoutGoal, setWorkoutGoal] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  /*  Load goals from backend */
   useEffect(() => {
-    localStorage.setItem("wellnest_goals", JSON.stringify(goals));
-  }, [goals]);
+    if (!user?._id) return;
 
-  const addGoal = (text, category) => {
+    const loadGoals = async () => {
+      try {
+        const data = await getUserGoals(user._id);
+
+        const combined = [
+          ...data.healthGoals.map((g, i) => ({
+            id: `h-${i}`,
+            text: g,
+            category: "health",
+            completed: false,
+          })),
+          ...data.workoutGoals.map((g, i) => ({
+            id: `w-${i}`,
+            text: g,
+            category: "workout",
+            completed: false,
+          })),
+        ];
+
+        setGoals(combined);
+      } catch (err) {
+        console.error("Failed to load goals");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGoals();
+  }, [user?._id]);
+
+  /*  Add goal */
+  const handleAddGoal = async (text, category) => {
     if (!text.trim()) return;
 
-    setGoals((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        text,
-        category,
+    const data = await addGoal(user._id, {
+      healthGoal: category === "health" ? text : "",
+      workoutGoal: category === "workout" ? text : "",
+    });
+
+    const updated = [
+      ...data.healthGoals.map((g, i) => ({
+        id: `h-${i}`,
+        text: g,
+        category: "health",
         completed: false,
-      },
-    ]);
+      })),
+      ...data.workoutGoals.map((g, i) => ({
+        id: `w-${i}`,
+        text: g,
+        category: "workout",
+        completed: false,
+      })),
+    ];
+
+    setGoals(updated);
   };
 
+  /*  Toggle completed (frontend-only UX) */
   const toggleGoal = (id) => {
     setGoals((prev) =>
       prev.map((g) =>
@@ -36,19 +81,47 @@ function Goals() {
     );
   };
 
-  const deleteGoal = (id) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
+  /*  Delete goal */
+  const handleDeleteGoal = async (goal) => {
+    const index = goals
+      .filter((g) => g.category === goal.category)
+      .findIndex((g) => g.id === goal.id);
+
+    const data = await deleteGoal(user._id, {
+      type: goal.category,
+      index,
+    });
+
+    const updated = [
+      ...data.healthGoals.map((g, i) => ({
+        id: `h-${i}`,
+        text: g,
+        category: "health",
+        completed: false,
+      })),
+      ...data.workoutGoals.map((g, i) => ({
+        id: `w-${i}`,
+        text: g,
+        category: "workout",
+        completed: false,
+      })),
+    ];
+
+    setGoals(updated);
   };
+
+  if (loading) {
+    return <p className="text-center mt-20">Loading goals...</p>;
+  }
 
   return (
     <div
       className="min-h-screen bg-cover bg-center py-10 sm:py-16 px-4 sm:px-6 sm:bg-fixed"
       style={{ backgroundImage: `url(${goalsBg})` }}
     >
-      {/* Main container */}
       <div className="max-w-6xl mx-auto bg-white/90 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xl">
         <h1 className="text-2xl sm:text-4xl font-bold text-green-700 mb-8 sm:mb-12 text-center">
-           Your Wellness Goals
+          Your Wellness Goals
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
@@ -60,12 +133,12 @@ function Goals() {
             value={healthGoal}
             onChange={setHealthGoal}
             onAdd={() => {
-              addGoal(healthGoal, "health");
+              handleAddGoal(healthGoal, "health");
               setHealthGoal("");
             }}
             goals={goals.filter((g) => g.category === "health")}
             onToggle={toggleGoal}
-            onDelete={deleteGoal}
+            onDelete={handleDeleteGoal}
           />
 
           <GoalSection
@@ -76,12 +149,12 @@ function Goals() {
             value={workoutGoal}
             onChange={setWorkoutGoal}
             onAdd={() => {
-              addGoal(workoutGoal, "workout");
+              handleAddGoal(workoutGoal, "workout");
               setWorkoutGoal("");
             }}
             goals={goals.filter((g) => g.category === "workout")}
             onToggle={toggleGoal}
-            onDelete={deleteGoal}
+            onDelete={handleDeleteGoal}
           />
         </div>
       </div>
@@ -89,8 +162,7 @@ function Goals() {
   );
 }
 
-
-/* Goal Section Box      */
+/*  COMPONENTS  */
 
 function GoalSection({
   title,
@@ -126,7 +198,6 @@ function GoalSection({
         {subtitle}
       </p>
 
-      {/* Input + Button (TABLET SAFE) */}
       <div className="flex flex-col lg:flex-row gap-3 mb-6">
         <input
           className={`flex-1 border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${theme.ring}`}
@@ -153,16 +224,13 @@ function GoalSection({
             key={goal.id}
             goal={goal}
             onToggle={onToggle}
-            onDelete={onDelete}
+            onDelete={() => onDelete(goal)}
           />
         ))}
       </div>
     </div>
   );
 }
-
-
-/* Individual Goal Item  */
 
 function GoalItem({ goal, onToggle, onDelete }) {
   return (
@@ -179,7 +247,7 @@ function GoalItem({ goal, onToggle, onDelete }) {
       </div>
 
       <button
-        onClick={() => onDelete(goal.id)}
+        onClick={onDelete}
         className="text-gray-400 hover:text-red-500 transition shrink-0"
       >
         ✕

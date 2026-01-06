@@ -42,31 +42,33 @@ function YogaSearch() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-4 text-black-700">
-         Yoga Pose Finder
+    <div className="w-full space-y-8">
+      {/* Title */}
+      <h2 className="text-3xl font-bold text-gray-900 text-center">
+        Yoga Pose Finder
       </h2>
 
       {/* Search */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4">
         <input
           type="text"
-          placeholder="Search pose, body part, or benefit (head, back, balance)"
+          placeholder="Search by pose, body part, or benefit"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="flex-1 border border-gray-300 rounded-xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
         />
 
         <button
           onClick={fetchYogaPoses}
-          className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
+          className="bg-green-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-green-700 transition"
         >
           Find Poses
         </button>
       </div>
 
+      {/* Error */}
       {error && (
-        <p className="text-red-600 text-sm mb-4">{error}</p>
+        <p className="text-red-600 text-sm text-center">{error}</p>
       )}
 
       {/* Results */}
@@ -74,9 +76,9 @@ function YogaSearch() {
         {poses.map((pose) => (
           <div
             key={pose.id}
-            className="border rounded-xl p-4 shadow-sm hover:shadow-md transition flex flex-col"
+            className="border border-gray-200 rounded-2xl p-5 flex flex-col bg-white/80"
           >
-            <h4 className="font-semibold text-lg text-gray-800">
+            <h4 className="font-semibold text-lg text-gray-900">
               {pose.english_name}
             </h4>
 
@@ -85,22 +87,20 @@ function YogaSearch() {
             </p>
 
             {pose.pose_benefits && (
-              <div className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-gray-700 mb-3">
                 <span className="font-medium">Benefits:</span>{" "}
                 {expandedId === pose.id
                   ? pose.pose_benefits
                   : pose.pose_benefits.slice(0, 120) + "..."}
-              </div>
+              </p>
             )}
 
             {pose.pose_benefits && (
               <button
                 onClick={() =>
-                  setExpandedId(
-                    expandedId === pose.id ? null : pose.id
-                  )
+                  setExpandedId(expandedId === pose.id ? null : pose.id)
                 }
-                className="text-green-600 text-sm font-medium mb-3 hover:underline self-start"
+                className="text-sm font-medium text-green-600 hover:underline self-start mb-4"
               >
                 {expandedId === pose.id ? "Show less" : "Read more"}
               </button>
@@ -110,7 +110,7 @@ function YogaSearch() {
               <img
                 src={pose.url_png}
                 alt={pose.english_name}
-                className="w-full h-48 object-contain rounded-lg bg-gray-50 mt-auto"
+                className="w-full h-48 object-contain rounded-xl bg-gray-50 mt-auto"
               />
             )}
           </div>

@@ -1,26 +1,32 @@
 import { useState } from "react";
-import SmartFoodAdvisor from "./SmartFoodAdvisor";
+import { getFoodAdvice } from "../api/food";
 
 function NutrientInfo() {
   const [food, setFood] = useState("");
   const [nutrition, setNutrition] = useState(null);
-  const [error, setError] = useState("");
+  const [nutritionError, setNutritionError] = useState("");
 
+  const [query, setQuery] = useState("");
+  const [recommended, setRecommended] = useState([]);
+  const [avoidable, setAvoidable] = useState([]);
+  const [advisorError, setAdvisorError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  /*  Nutrition  */
   const fetchNutrition = async () => {
     if (!food.trim()) return;
 
-    setError("");
+    setNutritionError("");
     setNutrition(null);
 
     try {
       const res = await fetch(
         `https://api.nal.usda.gov/fdc/v1/foods/search?query=${food}&pageSize=25&requireAllWords=true&api_key=${import.meta.env.VITE_USDA_API_KEY}`
       );
-
       const data = await res.json();
 
-      if (!data.foods || data.foods.length === 0) {
-        setError("Food not found");
+      if (!data.foods?.length) {
+        setNutritionError("Food not found");
         return;
       }
 
@@ -31,29 +37,19 @@ function NutrientInfo() {
       );
 
       if (!validFood) {
-        setError("No standard nutrition data available");
+        setNutritionError("No standard nutrition data available");
         return;
       }
 
       const nutrients = validFood.foodNutrients;
-
       const getValue = (name) =>
-        nutrients.find((n) => n.nutrientName === name)?.value ?? "N/A";
+        nutrients.find((n) => n.nutrientName === name)?.value ?? 0;
 
-      let protein = getValue("Protein");
-      let carbs = getValue("Carbohydrate, by difference");
-      let fat = getValue("Total lipid (fat)");
-      let calories = getValue("Energy");
-      let alcohol = getValue("Alcohol, ethyl");
-
-      protein = protein !== "N/A" ? Number(protein) : 0;
-      carbs = carbs !== "N/A" ? Number(carbs) : 0;
-      fat = fat !== "N/A" ? Number(fat) : 0;
-      alcohol = alcohol !== "N/A" ? Number(alcohol) : 0;
-
-      if (calories === "N/A" && alcohol === 0) {
-        calories = (protein * 4 + carbs * 4 + fat * 9).toFixed(1);
-      }
+      const protein = Number(getValue("Protein"));
+      const carbs = Number(getValue("Carbohydrate, by difference"));
+      const fat = Number(getValue("Total lipid (fat)"));
+      const calories =
+        getValue("Energy") || (protein * 4 + carbs * 4 + fat * 9).toFixed(1);
 
       setNutrition({
         name: validFood.description,
@@ -62,77 +58,142 @@ function NutrientInfo() {
         protein,
         carbs,
         fat,
-        alcohol,
       });
     } catch {
-      setError("Failed to fetch nutrition data");
+      setNutritionError("Failed to fetch nutrition data");
+    }
+  };
+
+  /* Smart Food Advisor */
+  const fetchFoods = async () => {
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setAdvisorError("");
+    setRecommended([]);
+    setAvoidable([]);
+
+    try {
+      const data = await getFoodAdvice(query);
+      if (data.source === "rules") {
+        setRecommended(data.recommended || []);
+        setAvoidable(data.avoid || []);
+      } else {
+        setAdvisorError("No recommendations found");
+      }
+    } catch {
+      setAdvisorError("Backend unavailable");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-12">
-      <h1 className="text-3xl font-bold text-center mb-12">
-         Nutrition & Smart Food Guidance
-      </h1>
+    <div className="w-full space-y-14">
+      <h2 className="text-3xl font-bold text-center text-gray-900">
+        Nutrition & Smart Food Guidance
+      </h2>
 
-      {/* Side-by-side on desktop, stacked on mobile */}
-      <div className="grid md:grid-cols-2 gap-8 items-stretch">
+      {/* INPUTS + BUTTONS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Nutrition Input */}
+        <div className="space-y-5">
+          <h3 className="text-2xl font-semibold text-center text-gray-800">
+            Nutrition Info
+          </h3>
 
-        {/* Nutrition Info */}
-        <div className="bg-white shadow-lg rounded-2xl p-8 flex flex-col h-full">
-          <div className="h-full flex flex-col max-w-4xl mx-auto px-4 py-6">
+          <input
+            type="text"
+            placeholder="Enter food (egg, rice, mushroom)"
+            value={food}
+            onChange={(e) => setFood(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-5 py-4
+                       focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
 
-            <h2 className="text-2xl font-bold mb-4 text-center text-black min-h-[40px] flex items-center justify-center">
-              Nutrition Info
-            </h2>
+          <button
+            onClick={fetchNutrition}
+            className="w-full bg-green-600 text-white py-4 rounded-xl
+                       font-semibold hover:bg-green-700 transition"
+          >
+            Get Nutrition
+          </button>
 
-            <input
-              type="text"
-              placeholder="Enter food (egg, rice, mushroom)"
-              value={food}
-              onChange={(e) => setFood(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3
-                         focus:outline-none
-                         focus:border-gray-800
-                         focus:ring-1 focus:ring-green-500
-                         transition mb-4"
-            />
+          {nutritionError && (
+            <p className="text-red-500 text-sm">{nutritionError}</p>
+          )}
+        </div>
 
-            <button
-              onClick={fetchNutrition}
-              className="w-full bg-green-600 text-white py-3 rounded-xl
-                         hover:bg-green-700 transition font-semibold mb-4"
-            >
-              Get Nutrition
-            </button>
+        {/* Smart Advisor Input */}
+        <div className="space-y-5">
+          <h3 className="text-2xl font-semibold text-center text-gray-800">
+            Smart Food Advisor
+          </h3>
 
-            {error && (
-              <p className="text-red-500 text-center mb-4">{error}</p>
-            )}
+          <input
+            type="text"
+            placeholder="Diabetes, immunity, menstrual health..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-5 py-4
+                       focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
 
-            {nutrition && (
-              <div className="mt-4 bg-green-50 p-4 rounded-lg space-y-1 flex-1">
-                <p><b>Food:</b> {nutrition.name}</p>
-                <p><b>Serving:</b> {nutrition.serving} g</p>
-                <p><b>Calories:</b> {nutrition.calories} kcal</p>
-                <p><b>Protein:</b> {nutrition.protein} g</p>
-                <p><b>Carbs:</b> {nutrition.carbs} g</p>
-                <p><b>Fat:</b> {nutrition.fat} g</p>
-                {nutrition.alcohol > 0 && (
-                  <p className="text-orange-600 font-semibold">
-                    ⚠ Contains alcohol
-                  </p>
-                )}
-              </div>
-            )}
+          <button
+            onClick={fetchFoods}
+            className="w-full bg-green-600 text-white py-4 rounded-xl
+                       font-semibold hover:bg-green-700 transition"
+          >
+            Get Recommendations
+          </button>
+
+          {loading && <p className="text-gray-600">Loading...</p>}
+          {advisorError && (
+            <p className="text-red-500 text-sm">{advisorError}</p>
+          )}
+        </div>
+      </div>
+
+      {/* RESULTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Nutrition Result */}
+        {nutrition && (
+          <div className="bg-green-50 rounded-xl p-6 space-y-2 text-base">
+            <p><b>Food:</b> {nutrition.name}</p>
+            <p><b>Serving:</b> {nutrition.serving} g</p>
+            <p><b>Calories:</b> {nutrition.calories} kcal</p>
+            <p><b>Protein:</b> {nutrition.protein} g</p>
+            <p><b>Carbs:</b> {nutrition.carbs} g</p>
+            <p><b>Fat:</b> {nutrition.fat} g</p>
           </div>
-        </div>
+        )}
 
-        {/* Smart Food Advisor(unchanged) */}
-        <div className="bg-white shadow-lg rounded-2xl p-8 flex flex-col h-full">
-          <SmartFoodAdvisor />
-        </div>
+        {/* Advisor Result */}
+        {(recommended.length > 0 || avoidable.length > 0) && (
+          <div className="space-y-8">
+            <div>
+              <h4 className="text-lg font-semibold text-green-700 mb-3">
+                Recommended Foods
+              </h4>
+              <ul className="list-disc list-inside space-y-2">
+                {recommended.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
+            </div>
 
+            <div>
+              <h4 className="text-lg font-semibold text-red-600 mb-3">
+                Avoidable Foods
+              </h4>
+              <ul className="list-disc list-inside space-y-2">
+                {avoidable.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
