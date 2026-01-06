@@ -69,7 +69,7 @@ function Calendar() {
       {/* Main container */}
       <div className="max-w-6xl mx-auto bg-white/90 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xl">
         <h1 className="text-2xl sm:text-4xl font-bold text-green-700 mb-8 sm:mb-12 text-center">
-          📅 Wellness Calendar
+           Wellness Calendar
         </h1>
 
         {/* Add Event Section */}
