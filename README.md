@@ -31,8 +31,7 @@
 
 ## Detailed Project Structure
 
-📁 Detailed Project Structure
-
+```text
 WellNest/
 │
 ├── server/                              # Backend (Node.js + Express)
@@ -101,14 +100,14 @@ WellNest/
 │   ├── App.jsx                           # Root React component
 │   ├── main.jsx                          # React app bootstrap (Vite)
 │   ├── index.css                         # Global styling & Tailwind base
-│   └── .env                              # Frontend environment variables (VITE_*)
+│   └── .env                              # Frontend environment variables
 │
 ├── public/                               # Static public assets
 ├── index.html                            # Main HTML template
 ├── package.json                          # Frontend dependencies
 ├── .gitignore                            # Ignored files & folders
 └── README.md                             # Project documentation
-
+```
 
 ---
 
